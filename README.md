@@ -7,7 +7,7 @@ cd scripts/examples/Mozart*
 
 Requirements:
 ```
-bc ffmpeg ffprobe jq rubberband sox yt-dlp
+bc ffmpeg ffprobe jq metaflac rubberband sox yt-dlp
 ```
 
 Stream / download examples:  

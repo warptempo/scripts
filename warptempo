@@ -109,7 +109,7 @@ if [[ $validation_errors -gt 0 ]]; then
 	exit 1
 fi
 
-requirements=(bc ffmpeg ffprobe jq rubberband sox yt-dlp)
+requirements=(bc ffmpeg ffprobe jq metaflac rubberband sox yt-dlp)
 requirement_errors=0
 
 for requirement in "${requirements[@]}"; do
@@ -479,6 +479,8 @@ fi
 rubberband -t 1 --timemap .$md5-timemap --$engine --ignore-clipping $pre .$md5-tmp.flac
 
 ffmpeg -i .$md5-tmp.flac -c:a flac -filter_complex alimiter=level_in=0.0dB:level_out=-0.1dB:latency=enabled:level=disabled "$audio_output"
+
+metaflac --set-tag="COMMENT=rubberband v$(rubberband -V 2>&1)" "$audio_output"
 
 rm -f .$md5-timemap .$md5-timemap-trimmed .$md5-labels .$md5-labels-disabled .$md5-pre-trimmed.flac .$md5-tmp.flac
 
