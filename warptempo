@@ -314,7 +314,7 @@ done < "$warpmarkers_file"
 
 pre=.$md5-pre.flac
 if [[ ! -f $pre ]]; then
-	if [[ "${audio_input,,}" != *.flac ]]; then
+	if [[ "${audio_input,,}" == *.flac ]]; then
 		ln -srf "$audio_input" $pre
 	else
 		ffmpeg -i "$audio_input" -sample_fmt s32 $pre
