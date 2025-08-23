@@ -189,7 +189,7 @@ audio_output="$title.flac"
 mkdir -p "$(dirname "$audio_output")"
 log="$title.log"
 
-rm -f .$md5-timemap .$md5-timemap-trimmed .$md5-labels .$md5-labels-disabled .$md5-pre-trimmed.wav .$md5-tmp.wav "$audio_output" "$log"
+rm -f .$md5-timemap .$md5-timemap-trimmed .$md5-labels .$md5-labels-disabled .$md5-trimmed.wav .$md5-tmp.wav "$audio_output" "$log"
 
 if [[ "$(cat -e "$warpmarkers_file" | tail -n 1)" != *"$" ]]; then 
 	echo >> "$warpmarkers_file"
@@ -312,24 +312,16 @@ while IFS= read -r line; do
 	fi
 done < "$warpmarkers_file"
 
-pre=.$md5-pre.wav
-if [[ ! -f $pre ]]; then
-	if [[ "${audio_input,,}" == *.wav ]]; then
-		ln -srf "$audio_input" $pre
-	else
-		ffmpeg -i "$audio_input" -c:a pcm_f32le $pre
-	fi
-fi
-sample_rate="$(ffprobe -hide_banner -loglevel error -show_streams $pre | grep sample_rate= | cut -d = -f 2)"
-total_frames="$(ffprobe -hide_banner -loglevel error -show_streams $pre | grep duration_ts= | cut -d = -f 2)"
-total_seconds="$(ffprobe -hide_banner -loglevel error -show_streams $pre | grep duration= | cut -d = -f 2)"
+sample_rate="$(ffprobe -hide_banner -loglevel error -show_streams "$audio_input" | grep sample_rate= | cut -d = -f 2)"
+total_frames="$(ffprobe -hide_banner -loglevel error -show_streams "$audio_input" | grep duration_ts= | cut -d = -f 2)"
+total_seconds="$(ffprobe -hide_banner -loglevel error -show_streams "$audio_input" | grep duration= | cut -d = -f 2)"
 total_time_ms=$(echo $(date -d@$(printf "%.3f\n" $total_seconds) -u +%M:%S.%N) | cut -c1-9)
 
 if [[ ! -z "$begin_time" ]] && [[ ! -z "$end_time" ]]; then
 	begin_seconds="$(echo "$begin_time" | awk -F: '{ print ($1 * 60) + $2 }')"
 	end_seconds="$(echo "$end_time" | awk -F: '{ print ($1 * 60) + $2 }')"
-	sox $pre .$md5-pre-trimmed.wav trim "$begin_time" ="$end_time"
-	pre=.$md5-pre-trimmed.wav
+	sox "$audio_input" -b 32 .$md5-trimmed.wav trim "$begin_time" ="$end_time"
+	audio_input=.$md5-trimmed.wav
 	begin_frame="$(printf "%.0f\n" "$(echo "$begin_seconds*$sample_rate" | bc -l)")"
 	end_frame="$(printf "%.0f\n" "$(echo "$end_seconds*$sample_rate" | bc -l)")"
 fi
@@ -479,13 +471,13 @@ else
 	mv .$md5-timemap-trimmed .$md5-timemap
 fi
 
-rubberband -t 1 --timemap .$md5-timemap --$engine --ignore-clipping $pre .$md5-tmp.wav
+rubberband -t 1 --timemap .$md5-timemap --$engine --ignore-clipping "$audio_input" .$md5-tmp.wav
 
 ffmpeg -i .$md5-tmp.wav -c:a flac -filter_complex alimiter=level_in=0.0dB:level_out=-0.1dB:latency=enabled:level=disabled "$audio_output"
 
 metaflac --set-tag="COMMENT=rubberband v$(rubberband -V 2>&1)" "$audio_output"
 
-rm -f .$md5-timemap .$md5-timemap-trimmed .$md5-labels .$md5-labels-disabled .$md5-pre-trimmed.wav .$md5-tmp.wav
+rm -f .$md5-timemap .$md5-timemap-trimmed .$md5-labels .$md5-labels-disabled .$md5-trimmed.wav .$md5-tmp.wav
 
 
 
